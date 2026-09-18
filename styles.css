@@ -141,7 +141,7 @@ h1 {
 
 .preview-wrap {
   width: 100%;
-  height: 464px;
+  aspect-ratio: 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -153,15 +153,20 @@ h1 {
 
 canvas {
   display: block;
+  flex: none;
   max-width: 100%;
   max-height: 100%;
-  width: auto;
+  width: 100%;
   height: auto;
   object-fit: contain;
   background-color: #293e32;
   background-image: conic-gradient(#354b3c 25%,transparent 0 50%,#354b3c 0 75%,transparent 0);
   background-size: 16px 16px;
   box-shadow: 0 10px 35px #0004;
+}
+
+canvas[data-ratio="portrait"] {
+  width: 56.25%;
 }
 
 .stage-label {
@@ -369,10 +374,6 @@ button:focus-visible {
   .stage {
     min-height: 340px;
     padding: 35px 20px 20px;
-  }
-
-  .preview-wrap {
-    height: 400px;
   }
 
   .panel {

@@ -35,6 +35,7 @@ function render() {
     $('notice').textContent = 'この比率で切り抜くには画像が小さすぎます。別の画像か比率を選んでください。';
     return;
   }
+  canvas.dataset.ratio = ratio;
   canvas.width = crop.w;
   canvas.height = crop.h;
   ctx.drawImage(sourceImage, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
