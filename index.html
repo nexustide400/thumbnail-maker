@@ -1,232 +1,86 @@
 <!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="画像を幅1280pxへリサイズし、高さ720pxへ切り抜いてPNG保存するローカル画像変換ツール。">
-  <title>1280 × 720 PNG Maker</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #f1eadf;
-      --panel: #fffaf1;
-      --line: #d9cbb5;
-      --muted: #234b38;
-      --text: #234b38;
-      --accent: #32694e;
-      --accent-hover: #28563f;
-      --accent-ink: #fffaf1;
-      --gold: #b58343;
-      --drop: #16251e;
-      --drop-soft: #21362b;
-      --drop-text: #fbf5e9;
-      --drop-muted: #fbf5e9;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at 10% 0%, rgba(203, 157, 91, .22), transparent 32rem),
-        radial-gradient(circle at 92% 12%, rgba(50, 105, 78, .15), transparent 30rem),
-        linear-gradient(180deg, #fbf7ef 0%, var(--bg) 100%);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
-    main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 64px; }
-    header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
-    .title-lockup { display: flex; align-items: center; gap: clamp(10px, 2vw, 22px); }
-    h1 { margin: 0; color: #234b38; font-size: clamp(2rem, 5vw, 4.2rem); line-height: .95; letter-spacing: -.055em; }
-    .title-image { width: clamp(96px, 14vw, 160px); height: auto; flex: none; filter: drop-shadow(0 14px 20px rgba(68, 48, 26, .2)); }
-    header p { max-width: 390px; margin: 0; color: var(--muted); line-height: 1.7; }
-    .grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
-    .card { border: 1px solid var(--line); border-radius: 20px; background: rgba(255, 250, 241, .9); box-shadow: 0 18px 48px rgba(67, 50, 28, .1); overflow: hidden; }
-    .drop {
-      min-height: 430px;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      position: relative;
-      border-color: #31473b;
-      background:
-        radial-gradient(circle at 20% 10%, rgba(181, 131, 67, .13), transparent 22rem),
-        linear-gradient(145deg, var(--drop-soft), var(--drop));
-      transition: border-color .2s, background .2s;
-    }
-    .drop.is-over { border-color: var(--gold); background: #294536; box-shadow: inset 0 0 0 2px var(--gold), 0 18px 48px rgba(67, 50, 28, .12); }
-    .drop.has-image { align-self: start; display: block; min-height: 0; padding: 0; border-color: var(--line); background: none; }
-    .empty { text-align: center; }
-    .empty strong { display: block; margin-bottom: 10px; color: var(--drop-text); font-size: 1.2rem; }
-    .empty span { color: var(--drop-muted); font-size: .92rem; }
-    input[type=file] { display: none; }
-    .pick, .download {
-      border: 0;
-      border-radius: 999px;
-      padding: 13px 20px;
-      font: inherit;
-      font-weight: 750;
-      cursor: pointer;
-    }
-    .pick { margin-top: 22px; border: 1px solid rgba(181, 131, 67, .42); background: #f1dfbe; color: #2c3f34; }
-    .pick:hover { background: #f7e9cf; }
-    .download { width: 100%; background: var(--accent); color: var(--accent-ink); }
-    .download:not(:disabled):hover { background: var(--accent-hover); }
-    .download:disabled { opacity: .35; cursor: not-allowed; }
-    canvas {
-      display: none;
-      width: 100%;
-      height: auto;
-      background-color: #17231d;
-      background-image:
-        linear-gradient(45deg, #213028 25%, transparent 25%),
-        linear-gradient(-45deg, #213028 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #213028 75%),
-        linear-gradient(-45deg, transparent 75%, #213028 75%);
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-      background-size: 16px 16px;
-    }
-    .has-image canvas { display: block; }
-    aside { padding: 22px; display: flex; flex-direction: column; gap: 22px; }
-    .eyebrow { margin: 0 0 6px; color: var(--text); font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    h2 { margin: 0; font-size: 1.05rem; }
-    .steps { display: grid; gap: 10px; }
-    .step { display: grid; grid-template-columns: 28px 1fr; gap: 10px; color: var(--muted); font-size: .88rem; line-height: 1.45; }
-    .step b { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #c6a36d; border-radius: 50%; color: var(--accent); background: #fbf1df; font-size: .75rem; }
-    .control { border-top: 1px solid var(--line); padding-top: 20px; }
-    .control label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: .88rem; }
-    .control output { color: var(--muted); }
-    input[type=range] { width: 100%; accent-color: var(--accent); }
-    .notice { min-height: 42px; margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.55; }
-    .privacy { margin-top: auto; color: var(--muted); font-size: .74rem; line-height: 1.5; }
-    @media (max-width: 760px) {
-      main { padding-top: 28px; }
-      header { align-items: start; flex-direction: column; }
-      .grid { grid-template-columns: 1fr; }
-      .drop { min-height: 300px; }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <header>
-      <div class="title-lockup">
-        <h1>1280 × 720<br>PNG Maker</h1>
-        <img class="title-image" src="assets/title-characters.png" alt="冒険者のエルフ二人">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="元画像の解像度を保って16:9・9:16に切り抜く、ブラウザ完結のThumbnail Maker。">
+    <title>Thumbnail Maker</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand">
+          <div>
+            <p class="kicker">A LITTLE CROP. A NEW PERSPECTIVE.</p>
+            <h1>Thumbnail Maker</h1>
+            <p class="intro">お気に入りの一枚を、ちょうどいい比率に。<br>元の解像度を保って、横にも縦にも切り抜き。</p>
+          </div>
+          <img src="assets/title-characters.png" width="1254" height="1254" alt="冒険者のエルフ二人">
+        </div>
+        <span class="local">画像は端末の中だけで処理</span>
+      </header>
+      <div class="workspace">
+        <section class="stage" id="dropZone" aria-label="画像の読み込みとプレビュー">
+          <span class="stage-label">PREVIEW</span>
+          <div class="empty" id="emptyState">
+            <button class="pick" id="pickButton" type="button">画像を選ぶ</button>
+            <p>画像をドラッグ＆ドロップ<br>JPEG・PNG・WebPなどに対応</p>
+          </div>
+          <div class="preview-wrap" id="previewWrap" hidden>
+            <canvas id="canvas" aria-label="切り抜き後のプレビュー"></canvas>
+          </div>
+        </section>
+        <aside class="panel" aria-label="切り抜き設定">
+          <div>
+            <p class="section-label">01 / 切り抜く比率</p>
+            <div class="ratios" role="group" aria-label="アスペクト比">
+              <button class="ratio" type="button" data-ratio="landscape" aria-pressed="true">
+                <span class="shape-box">
+                  <span class="shape"></span>
+                </span>16:9<small>横長</small>
+              </button>
+              <button class="ratio" type="button" data-ratio="portrait" aria-pressed="false">
+                <span class="shape-box">
+                  <span class="shape portrait"></span>
+                </span>9:16<small>縦長</small>
+              </button>
+            </div>
+          </div>
+          <div class="divider">
+            <div class="position-heading">
+              <label for="position">02 / 切り抜き位置</label>
+              <output id="positionLabel" for="position">中央</output>
+            </div>
+            <input id="position" type="range" min="0" max="100" value="50" disabled>
+            <div class="ends">
+              <span id="startLabel">上 / 左</span>
+              <span id="endLabel">下 / 右</span>
+            </div>
+          </div>
+          <div class="details">
+            <p class="filename" id="filename">画像が選択されていません</p>
+            <div class="detail">
+              <span>元のサイズ</span>
+              <strong id="sourceSize">—</strong>
+            </div>
+            <div class="detail">
+              <span>保存サイズ</span>
+              <strong id="outputSize">—</strong>
+            </div>
+          </div>
+          <p class="notice" id="notice" role="status">拡大・縮小せず、選んだ比率で切り抜きます。</p>
+          <div class="actions">
+            <button class="download" id="downloadButton" type="button" disabled>PNGを保存 ↓</button>
+            <div class="secondary">
+              <button id="replaceButton" type="button">画像を選び直す</button>
+              <button class="remove" id="removeButton" type="button" disabled>画像を消す</button>
+            </div>
+          </div>
+        </aside>
       </div>
-      <p>幅を1280pxに合わせ、はみ出した高さを720pxに切り抜き。画像は端末の中だけで処理されます。</p>
-    </header>
-    <section class="grid">
-      <div class="card drop" id="dropZone">
-        <div class="empty" id="emptyState">
-          <strong>画像をここにドロップ</strong>
-          <span>JPEG・PNG・WebPなどに対応</span><br>
-          <button class="pick" id="pickButton" type="button">画像を選ぶ</button>
-        </div>
-        <canvas id="canvas" width="1280" height="720" aria-label="変換後のプレビュー"></canvas>
-      </div>
-      <aside class="card">
-        <div>
-          <p class="eyebrow">Process</p>
-          <h2>変換の流れ</h2>
-        </div>
-        <div class="steps">
-          <div class="step"><b>1</b><span>縦横比を保ったまま、幅を1280pxに変更</span></div>
-          <div class="step"><b>2</b><span>高さ720pxを超える部分を切り抜き</span></div>
-          <div class="step"><b>3</b><span>1280 × 720pxのPNGとして保存</span></div>
-        </div>
-        <div class="control">
-          <label for="position">切り抜き位置 <output id="positionLabel">中央</output></label>
-          <input id="position" type="range" min="0" max="100" value="50" disabled>
-        </div>
-        <p class="notice" id="notice">画像を選ぶと、ここに変換結果が表示されます。</p>
-        <button class="download" id="downloadButton" type="button" disabled>PNGを保存</button>
-        <div class="privacy">処理はすべてこのブラウザ内で完結します。画像がアップロードされることはありません。</div>
-      </aside>
-    </section>
-    <input id="fileInput" type="file" accept="image/*">
-  </main>
-  <script>
-    const dropZone = document.querySelector('#dropZone');
-    const emptyState = document.querySelector('#emptyState');
-    const fileInput = document.querySelector('#fileInput');
-    const pickButton = document.querySelector('#pickButton');
-    const canvas = document.querySelector('#canvas');
-    const ctx = canvas.getContext('2d');
-    const position = document.querySelector('#position');
-    const positionLabel = document.querySelector('#positionLabel');
-    const notice = document.querySelector('#notice');
-    const downloadButton = document.querySelector('#downloadButton');
-    let sourceImage = null;
-    let sourceName = 'image';
-
-    const positionText = value => value < 34 ? '上寄せ' : value > 66 ? '下寄せ' : '中央';
-
-    function render() {
-      if (!sourceImage) return;
-      const scale = 1280 / sourceImage.naturalWidth;
-      const scaledHeight = sourceImage.naturalHeight * scale;
-      ctx.clearRect(0, 0, 1280, 720);
-      if (scaledHeight >= 720) {
-        const overflow = scaledHeight - 720;
-        const sourceY = overflow * (Number(position.value) / 100);
-        ctx.drawImage(sourceImage, 0, -sourceY, 1280, scaledHeight);
-        notice.textContent = `幅1280pxに変更後、縦${Math.round(overflow)}px分を切り抜きます。`;
-        position.disabled = overflow < 1;
-      } else {
-        const top = (720 - scaledHeight) / 2;
-        ctx.drawImage(sourceImage, 0, top, 1280, scaledHeight);
-        notice.textContent = `高さが720px未満のため、上下${Math.round(top)}pxずつ透明に補います。`;
-        position.disabled = true;
-      }
-      positionLabel.textContent = positionText(Number(position.value));
-    }
-
-    function loadFile(file) {
-      if (!file || !file.type.startsWith('image/')) {
-        notice.textContent = '画像ファイルを選んでください。';
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      const image = new Image();
-      image.onload = () => {
-        if (sourceImage?.src?.startsWith('blob:')) URL.revokeObjectURL(sourceImage.src);
-        sourceImage = image;
-        sourceName = file.name.replace(/\.[^.]+$/, '') || 'image';
-        dropZone.classList.add('has-image');
-        emptyState.hidden = true;
-        position.disabled = false;
-        downloadButton.disabled = false;
-        render();
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        notice.textContent = 'この画像を読み込めませんでした。別の画像をお試しください。';
-      };
-      image.src = url;
-    }
-
-    pickButton.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', event => loadFile(event.target.files[0]));
-    position.addEventListener('input', render);
-    ['dragenter', 'dragover'].forEach(type => dropZone.addEventListener(type, event => {
-      event.preventDefault();
-      dropZone.classList.add('is-over');
-    }));
-    ['dragleave', 'drop'].forEach(type => dropZone.addEventListener(type, event => {
-      event.preventDefault();
-      dropZone.classList.remove('is-over');
-    }));
-    dropZone.addEventListener('drop', event => loadFile(event.dataTransfer.files[0]));
-    downloadButton.addEventListener('click', () => {
-      canvas.toBlob(blob => {
-        if (!blob) return;
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${sourceName}-1280x720.png`;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-      }, 'image/png');
-    });
-  </script>
-</body>
+      <input id="fileInput" type="file" accept="image/*" hidden>
+    </main>
+    <script src="app.js" defer></script>
+  </body>
 </html>
